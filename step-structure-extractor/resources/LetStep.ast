@@ -1,0 +1,527 @@
+language EcmaScriptSpec
+
+concept Step {}
+
+// let {{ var }} be
+concept LetStep base Step {
+    variable: Variable;
+    expr: Expression;
+}
+
+concept Reference {}
+
+concept Variable base Reference {
+    name: identifier;
+}
+
+concept Expression {}
+
+concept InvokeExpression base Expression {}
+
+// {{ str }}({{ expr }}*)
+concept InvokeAbstractOperationExpression base InvokeExpression {
+    name: identifier;
+    args: Expression[];
+}
+
+// ------------------------------
+
+// {{ ref }}
+concept ReferenceExpression base CalcExpression {
+    ref: Reference;
+}
+
+concept CalcExpression base Expression {}
+
+concept Property {}
+
+concept FieldProperty base Property {
+    name: identifier;
+}
+
+concept IndexProperty base Property {
+    index: Expression;
+}
+
+concept ComponentProperty base Property {
+    name: identifier;
+}
+
+concept IntrinsicProperty base Property {
+    intrinsic: Intrinsic;
+}
+
+concept Intrinsic {
+    base: identifier;
+    props: identifier[];
+}
+
+// the running execution context
+concept RunningExecutionContext base Reference {}
+
+// the second to top element of the execution context stack
+concept SecondExecutionContext base Reference {}
+
+// the active function object
+concept ActiveFunctionObject base Reference {}
+
+// the Agent Record of the surrounding agent
+concept AgentRecord base Reference {}
+
+// (FieldProperty) {{base}}.[[{{name}}]]
+// (IndexProperty) let {{var}} be {{base}}[{{index}}]
+// (IndexProperty) let {{var}} be the {{index}} element of {{base}}
+// (ComponentProperty) let {{var}} be the running execution context's {{prop}}
+// (IntrinsicProperty) let {{var}} be {{base}}.[[%{{prop.ident}}%]]
+concept PropertyReference base Reference {
+    base: Reference;
+    prop: Property;
+}
+
+// ------------------------------
+
+// {{ ... }}({{ expr }}*)
+concept InvokeMethodExpression base InvokeExpression {
+    ref: PropertyReference;
+    args: Expression[];
+}
+
+// ------------------------------
+
+// ? {{ expr }}
+// ! {{ expr }}
+concept ReturnIfAbruptExpression base CalcExpression {
+    expr: Expression;
+    check: boolean;
+}
+
+// ------------------------------
+
+concept ConversionExpression base CalcExpression {
+    op: ConversionExpressionOperator;
+    expr: Expression;
+}
+
+// (ToMath) the 32-bit two's complement bit string representing ℝ({{ expr }})
+//  -> ISSUE: "the 32-bit two's complement bit string representing"
+// (ToMath) the numeric value of {{ expr }}
+// (ToMath) ℝ({{ expr }})
+// (ToNumber) 𝔽({{ expr }})
+// (ToBigInt) ℤ({{ expr }})
+limited ConversionExpressionOperator {
+    ToApproxNumber; ToNumber; ToBigInt; ToMath;
+}
+
+// ------------------------------
+
+// {{ expr }} + {{ expr }}
+// {{ expr }} - {{ expr }}
+// {{ expr }} modulo {{ expr }}
+// {{ expr }} × {{ expr }}
+// {{ expr }} / {{ expr }}
+concept BinaryExpression base CalcExpression {
+    left: CalcExpression;
+    op: BinaryExpressionOperator;
+    right: CalcExpression;
+}
+
+limited BinaryExpressionOperator {
+    Add; Sub; Mul; Div; Mod;
+}
+
+// ------------------------------
+
+// min({{ expr }}*)
+// max({{ expr }}*)
+// truncate({{ expr }}*)
+// abs({{ expr }}*)
+// floor({{ expr }}*)
+concept MathFuncExpression base CalcExpression {
+    op: MathFuncExpressionOperator;
+    args: CalcExpression[];
+}
+
+limited MathFuncExpressionOperator {
+    Max; Min; Abs; Floor; Truncate;
+}
+
+// ------------------------------
+
+// a new empty List
+// « »
+// « {{ expr }}* »
+// a List whose sole element is {{ expr }}
+concept ListExpression base Expression {
+    entries: Expression[];
+}
+
+// ------------------------------
+
+// the String value that is a copy of {{ expr }} with both leading and trailing whitespace removed
+// the String value that is a copy of {{ expr }} with leading whitespace removed
+// the String value that is a copy of {{ expr }} with trailing whitespace removed
+concept TrimExpression base Expression {
+    expr: Expression;
+    leading: boolean;
+    trailing: boolean;
+}
+
+// ------------------------------
+
+// 1526
+
+// the result of clamping {{ expr }} between {{ expr }} and {{ expr }}
+concept ClampExpression base Expression {
+    target: Expression;
+    lower: Expression;
+    upper: Expression;
+}
+
+// ------------------------------
+
+// 1696
+
+// {{ ty }} { [ {{ field }}: {{ expr }} ]* }
+// a { new | newly created } {{ tname }} {containing no bindings | with no fields | that initially has no fields}?
+concept RecordExpression base Expression {
+    tname: string; // NOTE: can contain whitespaces
+    fields: RecordField[];
+}
+
+concept RecordField {
+    name: identifier;
+    value: Expression;
+}
+
+// ------------------------------
+
+// 1923
+
+concept Literal base CalcExpression {}
+
+// "{{ str }}"
+// (if value is empty) the empty string
+concept StringLiteral base Literal {
+    value: string;
+}
+
+// ------------------------------
+
+// 2046
+
+// ~{{ str }}~
+concept EnumLiteral base Literal {
+    name: string; // [-+a-zA-Z0-9]+;
+}
+
+// ------------------------------
+
+// 2343
+
+// - {{ expr }}
+concept UnaryExpression base CalcExpression {
+    op: UnaryExpressionOperator;
+    expr: CalcExpression;
+}
+
+limited UnaryExpressionOperator {
+    Neg;
+}
+
+// ------------------------------
+
+// 2734
+
+// the length of {{ expr }}
+concept LengthExpression base Expression {
+    expr: Expression;
+}
+
+// ------------------------------
+
+// 2797
+
+concept NumericLiteral base Literal {}
+
+concept MathValueLiteral base Literal {}
+
+// {{ decimal }}
+concept DecimalMathValueLiteral base MathValueLiteral {
+    value: string; // [+-]?(0|[1-9][0-9]*)(\\.[0-9]+)?;
+}
+
+// ------------------------------
+
+// 3011
+
+// the substring of {{ expr }} from {{ expr }}
+concept SubstringExpressionFrom base Expression {
+    expr: Expression;
+    from: Expression;
+}
+
+// the substring of {{ expr }} from {{ expr }} to {{ expr }}
+concept SubstringExpressionFromTo base SubstringExpressionFrom {
+    to: Expression;
+}
+
+// ------------------------------
+
+// 3287
+
+concept BooleanLiteral base Literal {}
+
+// *true*
+concept TrueLiteral base BooleanLiteral {}
+
+// ------------------------------
+
+// 3507
+
+// *false*
+concept FalseLiteral base BooleanLiteral {}
+
+// ------------------------------
+
+// 4066
+
+// the string-concatenation of {{ expr }}*
+concept StringConcatExpression base Expression {
+    exprs: Expression[];
+}
+
+// ------------------------------
+
+// 4444
+
+concept MultilineExpression base Expression {}
+
+// a new Abstract Closure with no parameters that captures {{ var }}* and performs the following steps when called: {{ step }}
+// a new Abstract Closure with parameters ({{ var }}*) that captures {{ var }}* and performs the following steps when called: {{ step }}
+concept AbstractClosureExpression base MultilineExpression {
+    params: Variable[];
+    captured: Variable[];
+    body: Step;
+}
+
+// ------------------------------
+
+// 4656
+
+// {{ var }}({{ expr }}*)
+concept InvokeAbstractClosureExpression base InvokeExpression {
+    ref: Variable;
+    args: Expression[];
+}
+
+// ------------------------------
+
+// 4725
+
+// +∞
+concept PositiveInfinityMathValueLiteral base MathValueLiteral {}
+
+// ------------------------------
+
+// 4910
+
+// the number of elements in {{ expr }}
+// the number of elements in the List {{ expr }}
+concept NumberOfExpression base Expression {
+    expr: Expression;
+}
+
+// ------------------------------
+
+// 5586
+
+// *null*
+concept NullLiteral base Literal {}
+
+// ------------------------------
+
+// 6253 
+
+// a List whose elements are the elements of {{ expr }}
+concept ListCopyExpression base Expression {
+    expr: Expression;
+}
+
+// ------------------------------
+
+// 7003
+
+// a newly created *{{ str }}* object
+concept ErrorObjectLiteral base Literal {
+    name: string;
+}
+
+// ------------------------------
+
+// 7173
+
+// the list-concatenation of {{ expr }}*
+concept ListConcatExpression base Expression {
+    exprs: Expression[];
+}
+
+// ------------------------------
+
+// 7545
+
+// (Algo) the algorithm steps defined in <emu-xref href="#{{ str }}"></emu-xref>.
+// (InternalSlots) the internal slots listed in <emu-xref href="#{{ str }}"></emu-xref>.
+// (ParamLength) the number of non-optional parameters of the function definition in <emu-xref href="#{{ str }}"></emu-xref>.
+concept XRefExpression base Expression {
+    kind: XRefExpressionOperator;
+    id: string;
+}
+
+limited XRefExpressionOperator {
+    Algo; InternalSlots; ParamLength;
+}
+
+// ------------------------------
+
+// 8394
+
+// (And) the result of applying the bitwise AND operation to {{ expr }} and {{ expr }}
+// (Or) the result of applying the bitwise exclusive OR (XOR) operation to {{ expr }} and {{ expr }}
+// (XOr) the result of applying the bitwise inclusive OR operation to {{ expr }} and {{ expr }}
+concept BitwiseExpression base Expression {
+    left: Expression;
+    op: BitwiseExpressionOperator;
+    right: Expression;
+}
+
+limited BitwiseExpressionOperator {
+    And; Or; XOr;
+}
+
+// ------------------------------
+
+// 8571
+
+// 0x{{ n }}
+// the code unit 0x{{ n }}
+concept HexLiteral base Literal {
+    hex: number; // integer [0-9A-F]+
+}
+
+// 0x{{ n }} ({{ str }})
+// the code unit 0x{{ n }} ({{ str }})
+concept HexNamedLiteral base HexLiteral {
+    name: string; // [ A-Z-]+
+} 
+
+// ------------------------------
+
+// 11923
+
+// *this* value
+// the *this* value
+concept ThisLiteral base Literal {}
+
+// ------------------------------
+
+// 12241
+
+// NewTarget
+concept NewTargetLiteral base Literal {}
+
+// ------------------------------
+
+// 17166
+
+// {{ number }}
+concept NumberLiteral base NumericLiteral {}
+
+// *NaN*
+concept NaNLiteral base NumberLiteral {}
+
+// ------------------------------
+
+// *+∞*<sub>𝔽</sub>
+concept PositiveInfinityNumberLiteral base NumberLiteral {}
+
+// ------------------------------
+
+// *-∞*<sub>𝔽</sub>
+concept NegativeInfinityNumberLiteral base NumberLiteral {}
+
+// ------------------------------
+
+// 17251
+
+// (optional) the result of
+// (optional) the
+// (optional) the result of the
+// inverse tangent of ...
+// raising ...
+// base 10 logarithm of ...
+// base 2 logarithm of ...
+// cosine of ...
+// cube root of ...
+// exponential function of ...
+// hyperbolic cosine of ...
+// hyperbolic sine of ...
+// hyperbolic tangent of ...
+// inverse cosine of ...
+// inverse hyperbolic cosine of ...
+// inverse hyperbolic sine of ...
+// inverse hyperbolic tangent of ...
+// inverse sine of ...
+// natural logarithm of ...
+// natural logarithm of 1 + ...
+// sine of ...
+// square root of ...
+// subtracting 1 from the exponential function of ...
+// tangent of ... 
+concept MathOpExpression base Expression {
+    op: MathOpExpressionOperator;
+    args: CalcExpression[];
+}
+
+limited MathOpExpressionOperator {
+    Neg; Add; Sub; Mul; Pow;
+    Expm1; Log10; Log2; Cos; Cbrt; Exp; Cosh; Sinh; Tanh; Acos; Acosh;
+    Asinh; Atanh; Asin; Atan2; Atan; Log1p; Log; Sin; Sqrt; Tan;
+}
+
+// ------------------------------
+
+// 18880
+
+// {{ str }}::{{ str }}({{ expr }}*)
+concept InvokeNumericMethodExpression base InvokeExpression {
+    base: string;
+    name: string;
+    args: Expression[];
+}
+
+// ------------------------------
+
+// 22066
+
+// a List of the integers in the interval from {{ expr }} (inclusive) to {{ expr }} (exclusive), in ascending order
+// a List of the integers in the interval from {{ expr }} (inclusive) to {{ expr }} (exclusive), in descending order
+concept IntListExpression base Expression {
+    from: CalcExpression;
+    isFromInclusive: boolean;
+    to: CalcExpression;
+    isToInclusive: boolean;
+    isAscending: boolean;
+}
+
+// ------------------------------
+
+// 22832
+
+// the code unit at index {{ expr }} within {{ expr }}
+// the code unit at index {{ expr }} within the String {{ expr }}
+concept CodeUnitAtExpression base Expression {
+    base: Expression;
+    index: Expression;
+}
+
+// ------------------------------
